@@ -9,9 +9,9 @@ def email_agent(state):
 
     # Crear mensaje de estado
     if state.get("has_errors", False):
-        status_text = "Se detectaron errores en el CSV:\n" + "\n".join(state.get("validation_errors", []))
+        status_text = "Se detectaron errores en el parquet:\n" + "\n".join(state.get("validation_errors", []))
     else:
-        status_text = "El CSV se procesó correctamente."
+        status_text = "El parquet se procesó correctamente."
 
     report_text = state.get("final_report", "")
     full_message = f"{status_text}\n\nReporte de Claude:\n{report_text}"

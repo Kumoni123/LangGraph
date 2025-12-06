@@ -4,35 +4,33 @@ from agents.ingestion import ingestion_agent
 from agents.validation import validation_agent
 from agents.reporting import reporting_agent
 from agents.emailer import email_agent
+from dotenv import load_dotenv
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "../data")
+# Cargar variables del archivo .env
+load_dotenv()  # Esto carga LANGSMITH_API_KEY y otras variables
+print("LangSmith API Key cargada:", os.getenv("LANGSMITH_API_KEY") is not None)
+bucket = os.getenv("S3_BUCKET")
+key = os.getenv("S3_KEY")
 
-def find_csv_files():
-    return [
-        os.path.join(DATA_DIR, f)
-        for f in os.listdir(DATA_DIR)
-        if f.lower().endswith(".csv")
-    ]
 
 def main():
     graph = build_graph()
-    csv_files = find_csv_files()
 
-    if not csv_files:
-        print("No hay CSVs en data/")
-        return
+    # Configura aquí tu bucket y key del parquet
+    state = {
+        "s3_bucket": bucket,
+        "s3_key": key
+    }
 
-    for file_path in csv_files:
-        print(f"Procesando: {file_path}")
-        state = {"file_path": file_path}
+    # Ejecución del pipeline
+    state = ingestion_agent(state)  # Lee parquet desde S3
+    state = validation_agent(state)  # Valida dataframesu
+    state = reporting_agent(state)   # Genera reporte
+    state = email_agent(state)       # Envía correo
 
-        # Ejecución manual del pipeline
-        state = ingestion_agent(state)
-        state = validation_agent(state)
-        state = reporting_agent(state)
-        state = email_agent(state)  # ahora envía correo siempre
-
-        print("Estado final:", state)
+    print("Estado final:", state)
+    if state.get("errors"):
+        print("Errores detectados:", state["errors"])
 
 if __name__ == "__main__":
     main()

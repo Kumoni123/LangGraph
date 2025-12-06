@@ -7,7 +7,7 @@ def validation_agent(state):
     issues = []
 
     if df is None:
-        issues.append("No se cargó ningún CSV.")
+        issues.append("No se cargó ningún parquet.")
     else:
         # Nulls
         nulls = df.isnull().sum()

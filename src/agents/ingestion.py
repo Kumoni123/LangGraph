@@ -1,38 +1,45 @@
+# src/agents/ingestion.py
 import os
+import boto3
 import pandas as pd
+import io
+from dotenv import load_dotenv
+
+load_dotenv()
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
+
+BUCKET_NAME = os.getenv("S3_BUCKET")
+FOLDER_PATH = os.getenv("S3_KEY")  # carpeta en S3
 
 def ingestion_agent(state):
-    # Subimos dos niveles para llegar a la carpeta raíz del proyecto y luego data/
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    data_folder = os.path.join(base_dir, "data")
+    # Conectar a S3
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION
+    )
 
-    if not os.path.exists(data_folder):
+    # Listar todos los objetos en la carpeta
+    response = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=FOLDER_PATH)
+    if "Contents" not in response:
         state["data"] = None
-        state["file_path"] = None
-        state["has_errors"] = True
-        state["validation_report"] = f"Carpeta data no encontrada en {data_folder}"
         return state
 
-    csv_files = [f for f in os.listdir(data_folder) if f.endswith(".csv")]
-
-    if not csv_files:
+    parquet_keys = [obj['Key'] for obj in response['Contents'] if obj['Key'].endswith(".parquet")]
+    if not parquet_keys:
         state["data"] = None
-        state["file_path"] = None
-        state["has_errors"] = True
-        state["validation_report"] = "No se encontraron archivos CSV en la carpeta data."
         return state
 
-    # Tomamos el primer CSV encontrado
-    csv_path = os.path.join(data_folder, csv_files[0])
-    try:
-        df = pd.read_csv(csv_path)
-        state["data"] = df
-        state["file_path"] = csv_files[0]
-        state["has_errors"] = False
-        return state
-    except Exception as e:
-        state["data"] = None
-        state["file_path"] = csv_files[0]
-        state["has_errors"] = True
-        state["validation_report"] = f"Error leyendo CSV: {e}"
-        return state
+    # Leer todos los parquet y concatenarlos en un DataFrame
+    dfs = []
+    for key in parquet_keys:
+        obj = s3.get_object(Bucket=BUCKET_NAME, Key=key)
+        df = pd.read_parquet(io.BytesIO(obj['Body'].read()))
+        dfs.append(df)
+
+    state["data"] = pd.concat(dfs, ignore_index=True)
+    return state

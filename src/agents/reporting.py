@@ -6,7 +6,7 @@ client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 def reporting_agent(state):
     df = state.get("data")
     if df is None:
-        state["final_report"] = "No se pudo generar reporte: no se cargó CSV."
+        state["final_report"] = "No se pudo generar reporte: no se cargó parquet."
         return state
 
     # Generar resumen simple
@@ -23,7 +23,7 @@ def reporting_agent(state):
 
     # Prompt normal (HUMAN_PROMPT y AI_PROMPT ya NO existen)
     prompt_text = (
-        "Genera un reporte profesional en español del CSV procesado, usando la siguiente información:\n\n"
+        "Genera un reporte profesional en español del parquet procesado, usando la siguiente información:\n\n"
         + "\n".join(summary)
     )
 

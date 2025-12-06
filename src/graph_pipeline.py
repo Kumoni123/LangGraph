@@ -1,12 +1,20 @@
-from langgraph.graph import Graph
-from agents.ingestion import ingestion_agent
-from agents.validation import validation_agent
-from agents.reporting import reporting_agent
-from agents.emailer import email_agent
+import sys
+import os
+
+# Asegurarnos que la carpeta raíz esté en sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Ahora los imports absolutos funcionan
+from langgraph.graph import StateGraph
+from src.state import PipelineState
+from src.agents.ingestion import ingestion_agent
+from src.agents.validation import validation_agent
+from src.agents.reporting import reporting_agent
+from src.agents.emailer import email_agent
 
 def build_graph():
-    g = Graph()
-
+    #g = Graph()
+    g = StateGraph(PipelineState)
     # Nodos
     g.add_node("ingestion", ingestion_agent)
     g.add_node("validation", validation_agent)
@@ -24,4 +32,6 @@ def build_graph():
     # Email termina ejecución
     #g.add_edge("email", None)  # None = fin del grafo
 
-    return g
+    return g.compile()
+
+graph = build_graph()

@@ -1,0 +1,8 @@
+{
+    "graphs": {
+      "default": "src.graph_pipeline:build_graph"
+    },
+    "dependencies": ["langgraph"],
+    "python_version":"3.11"
+  }
+  
