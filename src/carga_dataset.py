@@ -4,14 +4,18 @@ import pandas as pd
 import boto3
 import io
 from langsmith import Client
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Inicializa el cliente
 client = Client()
 
 # Leer parquet desde S3
 s3 = boto3.client("s3")
-bucket = "belc-bigdata-models-dlk-qas"
-key = "pcd_model/datatrain/fr/train/codpais=PA/aniocampana=202508/data_01c0d68e-0619-07af-0050-ee83c6222afe_006_6_0.snappy.parquet"
+bucket = os.getenv("S3_BUCKET")
+key = os.getenv("S3_KEY")
 
 obj = s3.get_object(Bucket=bucket, Key=key)
 buffer = io.BytesIO(obj["Body"].read())
